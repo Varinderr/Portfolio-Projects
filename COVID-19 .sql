@@ -21,6 +21,7 @@ ORDER BY InfectionCount DESC
 #Counties with highest Death Count 
 SELECT location, MAX(total_deaths) AS TotalDeathCount
 FROM coviddeaths
+WHERE location not in ('world','international','European union')
 GROUP BY location
 ORDER BY TotalDeathCount DESC
 
@@ -89,4 +90,12 @@ SUM(new_vaccinations) OVER (PARTITION BY dea.location ORDER BY dea.location) AS 
     #ORDER BY 2,3
  SELECT *, (PeopleVaccinated/Population)*100
  FROM percentpopulationvaccinated
+
+#Select PercentPopulationInfected
+
+Select Location, Population,date, MAX(total_cases) as HighestInfectionCount,  Max((total_cases/population))*100 as PercentPopulationInfected
+From PortfolioProject..CovidDeaths
+--Where location like '%states%'
+Group by Location, Population, date
+order by PercentPopulationInfected desc
     
