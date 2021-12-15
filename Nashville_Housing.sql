@@ -44,3 +44,8 @@ update a
     from Final as a JOIN Final as b
     ON a.parcel_id = b.parcel_id and a.unique_id_ != b.unique_id_
     where a.property_address is null
+    
+#breaking down the address:
+
+select substring(property_address,1,charindex(',', property_address)-1) as Address
+    from Final
