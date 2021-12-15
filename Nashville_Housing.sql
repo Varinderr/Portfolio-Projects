@@ -31,3 +31,9 @@ FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
+
+#popunate Property Address using parcel_id
+
+select a.parcel_id, a.property_address, b.parcel_id, b.property_address from housinginfo as a JOIN housinginfo as b
+    ON a.parcel_id = b.parcel_id and a.unique_id_ != b.unique_id_
+    where a.property_address is null
