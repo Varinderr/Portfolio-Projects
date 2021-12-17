@@ -31,33 +31,170 @@ FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
+/*
+Cleaning Data in SQL Queries
+*/
 
-#popunate Property Address using parcel_id
 
--- select a.parcel_id, a.property_address, b.parcel_id, b.property_address, isnull(a.property_address, b.property_address)
---     from housinginfo as a JOIN housinginfo as b
---     ON a.parcel_id = b.parcel_id and a.unique_id_ != b.unique_id_
---     where a.property_address is null
-    
-update a
-    set property_address = isnull(a.property_address, b.property_address)
-    from Final as a JOIN Final as b
-    ON a.parcel_id = b.parcel_id and a.unique_id_ != b.unique_id_
-    where a.property_address is null
-    
-#breaking down the address:
-select 
-substring(property_address,1,charindex(',', property_address) - 1) as Address,
-substring(property_address,charindex(',', property_address) + 1) as City
-    from Final
+Select *
+From housinginfo
 
-#breaking owner's address:
-with owneraddressinfo as (
-    select unique_id_ as unique_id_3,
-    parcel_id as parcel_id3,
+-- Standardize Date Format
+
+
+Select saleDateConverted, CONVERT(Date,SaleDate)
+From housinginfo
+
+
+Update housinginfo
+SET SaleDate = CONVERT(Date,SaleDate)
+
+-- Populate Property Address data
+
+Select *
+From housinginfo
+--Where PropertyAddress is null
+order by ParcelID
+
+
+Select a.ParcelID, a.PropertyAddress, b.ParcelID, b.PropertyAddress, ISNULL(a.PropertyAddress,b.PropertyAddress)
+From housinginfo as a
+JOIN housinginfo as b
+	on a.ParcelID = b.ParcelID
+	AND a.uniqueid != b.uniqueid
+Where a.PropertyAddress is null
+
+
+Update a
+SET PropertyAddress = ISNULL(a.PropertyAddress,b.PropertyAddress)
+From housinginfo as a
+JOIN housinginfo as b
+	on a.ParcelID = b.ParcelID
+   AND a.uniqueid != b.uniqueid
+Where a.PropertyAddress is null
+
+-- Breaking out Address into Individual Columns (Address, City, State)
+
+
+Select PropertyAddress
+From housinginfo
+--Where PropertyAddress is null
+--order by ParcelID
+
+SELECT
+SUBSTRING(PropertyAddress, 1, CHARINDEX(',', PropertyAddress) -1 ) as Address
+, SUBSTRING(PropertyAddress, CHARINDEX(',', PropertyAddress) + 1 , LEN(PropertyAddress)) as Address
+
+From housinginfo
+
+
+ALTER TABLE housinginfo
+Add PropertySplitAddress Nvarchar(255);
+
+Update housinginfo
+SET PropertySplitAddress = SUBSTRING(PropertyAddress, 1, CHARINDEX(',', PropertyAddress) -1 )
+
+
+ALTER TABLE housinginfo
+Add PropertySplitCity Nvarchar(255);
+
+Update housinginfo
+SET PropertySplitCity = SUBSTRING(PropertyAddress, CHARINDEX(',', PropertyAddress) + 1 , LEN(PropertyAddress))
+
+Select *
+From housinginfo
+
+--owner's address
+
+Select OwnerAddress
+From housinginfo
+
+
+Select
     split_part(owner_address, ',',  1) as Onwers_Address,
     split_part(owner_address, ',',  2) as Onwers_City,
     split_part(owner_address, ',',  3) as Onwers_State
-    from Final)
-    
-select * from owneraddressinfo
+From housinginfo
+
+
+
+ALTER TABLE housinginfohousinginfo
+Add OwnerSplitAddress Nvarchar(255);
+
+Update housinginfohousinginfo
+SET OwnerSplitAddress = PARSENAME(REPLACE(OwnerAddress, ',', '.') , 3)
+
+
+ALTER TABLE housinginfohousinginfo
+Add OwnerSplitCity Nvarchar(255);
+
+Update housinginfohousinginfo
+SET OwnerSplitCity = PARSENAME(REPLACE(OwnerAddress, ',', '.') , 2)
+
+
+
+ALTER TABLE housinginfo
+Add OwnerSplitState Nvarchar(255);
+
+Update housinginfo
+SET OwnerSplitState = PARSENAME(REPLACE(OwnerAddress, ',', '.') , 1)
+
+Select *
+From housinginfo
+
+
+-- Change Y and N to Yes and No in "Sold as Vacant" field
+
+--To see the mismatch
+Select Distinct(SoldAsVacant), Count(SoldAsVacant)
+From housinginfo
+Group by SoldAsVacant
+order by 2
+
+--To MOdify the mismatch
+Select SoldAsVacant
+, CASE When SoldAsVacant = 'Y' THEN 'Yes'
+	   When SoldAsVacant = 'N' THEN 'No'
+	   ELSE SoldAsVacant
+	   END
+From housinginfo
+
+
+Update housinginfo
+SET SoldAsVacant = CASE When SoldAsVacant = 'Y' THEN 'Yes'
+	   When SoldAsVacant = 'N' THEN 'No'
+	   ELSE SoldAsVacant
+	   END
+      
+-- Remove Duplicates
+
+WITH Remove_Dup AS(
+Select *,
+	ROW_NUMBER() OVER (
+	PARTITION BY ParcelID,
+				 PropertyAddress,
+				 SalePrice,
+				 SaleDate,
+				 LegalReference
+				 ORDER BY
+					UniqueID
+					) row_num
+
+From housinginfo
+--order by ParcelID
+)
+Select *
+From Remove_Dup
+Where row_num > 1
+Order by PropertyAddress
+
+Select *
+From housinginfo
+
+-- Delete Unused Columns
+Select *
+From housinginfo
+
+
+ALTER TABLE housinginfo
+DROP COLUMN OwnerAddress, TaxDistrict, PropertyAddress, SaleDate
