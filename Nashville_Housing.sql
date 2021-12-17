@@ -1,4 +1,4 @@
-#Create TABLE
+--Create TABLE
 
 create table housinginfo(
    UniqueID INT NOT NULL AUTO_INCREMENT,
@@ -23,7 +23,7 @@ create table housinginfo(
    PRIMARY KEY ( UniqueID)
 );
 
-#Load data
+--Load data
 
 LOAD DATA INFILE 'Nashville_Housing.csv'
 INTO TABLE housinginfo
