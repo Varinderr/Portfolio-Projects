@@ -46,6 +46,18 @@ update a
     where a.property_address is null
     
 #breaking down the address:
-
-select substring(property_address,1,charindex(',', property_address)-1) as Address
+select 
+substring(property_address,1,charindex(',', property_address) - 1) as Address,
+substring(property_address,charindex(',', property_address) + 1) as City
     from Final
+
+#breaking owner's address:
+with owneraddressinfo as (
+    select unique_id_ as unique_id_3,
+    parcel_id as parcel_id3,
+    split_part(owner_address, ',',  1) as Onwers_Address,
+    split_part(owner_address, ',',  2) as Onwers_City,
+    split_part(owner_address, ',',  3) as Onwers_State
+    from Final)
+    
+select * from owneraddressinfo
